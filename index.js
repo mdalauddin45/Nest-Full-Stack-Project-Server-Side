@@ -43,6 +43,19 @@ async function run() {
     const categoryCollection = client.db("khudalagcy").collection("products");
     const usersCollection = client.db("khudalagcy").collection("users");
 
+    // Verify Admin
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      console.log("Admin true");
+      next();
+    };
+
     // Save user email & generate JWT
     app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
