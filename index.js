@@ -40,7 +40,7 @@ const client = new MongoClient(uri, {
 // Connect to MongoDb
 async function run() {
   try {
-    const categoryCollection = client.db("khudalagcy").collection("products");
+    const productsCollection = client.db("khudalagcy").collection("products");
     const usersCollection = client.db("khudalagcy").collection("users");
 
     // Verify Admin
@@ -80,10 +80,8 @@ async function run() {
     });
 
     // Get All User
-    app.get("/users", verifyJWT, async (req, res) => {
-      const query = {};
-      const cursor = usersCollection.find(query);
-      const users = await cursor.toArray();
+    app.get("/users", async (req, res) => {
+      const users = await usersCollection.find({}).toArray();
       res.send(users);
     });
 
@@ -100,9 +98,75 @@ async function run() {
       res.send(user);
     });
 
+    // delet a user
+    app.delete("/users/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // get all products
     app.get("/products", async (req, res) => {
-      const product = await categoryCollection.find({}).toArray();
+      const product = await productsCollection.find({}).toArray();
+      res.send(product);
+    });
+
+    // Get All products for host
+    app.get("/products/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = {
+        "seller.email": email,
+      };
+      const cursor = productsCollection.find(query);
+      const products = await cursor.toArray();
+      res.send(products);
+    });
+
+    // Post A Product
+    app.post("/products", verifyJWT, async (req, res) => {
+      const product = req.body;
+      console.log(product);
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // Update A product
+    app.put("/products", verifyJWT, async (req, res) => {
+      const product = req.body;
+      console.log(product);
+
+      const filter = {};
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: product,
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    // Delete a product
+    app.delete("/product/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Get Single product
+    app.get("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const product = await productsCollection.findOne(query);
       res.send(product);
     });
   } catch (error) {
