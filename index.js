@@ -42,6 +42,7 @@ async function run() {
   try {
     const productsCollection = client.db("khudalagcy").collection("products");
     const usersCollection = client.db("khudalagcy").collection("users");
+    const ordersCollection = client.db("khudalagcy").collection("orders");
 
     // Verify Admin
     const verifyAdmin = async (req, res, next) => {
@@ -168,6 +169,34 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const product = await productsCollection.findOne(query);
       res.send(product);
+    });
+
+    // get Orders
+    app.get("/orders", async (req, res) => {
+      let query = {};
+
+      if (req?.query?.email) {
+        query = {
+          email: req?.query?.email,
+        };
+      }
+      const cursor = ordersCollection.find(query);
+      const orders = await cursor.toArray();
+      res.send(orders);
+    });
+    //orders api
+    app.post("/orders", async (req, res) => {
+      const order = req.body;
+      const result = ordersCollection.insertOne(order);
+      res.send(result);
+    });
+
+    //delet order id
+    app.delete("/orders/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await ordersCollection.deleteOne(query);
+      res.send(result);
     });
   } catch (error) {
     console.log(error);
