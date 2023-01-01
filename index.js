@@ -23,7 +23,7 @@ function verifyJWT(req, res, next) {
     if (err) {
       return res.status(403).send({ message: "Forbidden access" });
     }
-    console.log(decoded);
+    // console.log(decoded);
     req.decoded = decoded;
     next();
   });
@@ -43,6 +43,7 @@ async function run() {
     const productsCollection = client.db("khudalagcy").collection("products");
     const usersCollection = client.db("khudalagcy").collection("users");
     const ordersCollection = client.db("khudalagcy").collection("orders");
+    const wishlistCollection = client.db("khudalagcy").collection("wishlist");
 
     // Verify Admin
     const verifyAdmin = async (req, res, next) => {
@@ -53,7 +54,7 @@ async function run() {
       if (user?.role !== "admin") {
         return res.status(403).send({ message: "forbidden access" });
       }
-      console.log("Admin true");
+      // console.log("Admin true");
       next();
     };
 
@@ -76,7 +77,7 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1d",
       });
-      console.log(result);
+      // console.log(result);
       res.send({ result, token });
     });
 
@@ -106,6 +107,27 @@ async function run() {
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
+    // update a user
+    app.patch("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1d",
+      });
+      res.send({ result, token });
+    });
 
     // get all products
     app.get("/products", async (req, res) => {
@@ -132,7 +154,7 @@ async function run() {
     // Post A Product
     app.post("/products", verifyJWT, async (req, res) => {
       const product = req.body;
-      console.log(product);
+      // console.log(product);
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
@@ -140,7 +162,7 @@ async function run() {
     // Update A product
     app.put("/products", verifyJWT, async (req, res) => {
       const product = req.body;
-      console.log(product);
+      // console.log(product);
 
       const filter = {};
       const options = { upsert: true };
@@ -184,19 +206,85 @@ async function run() {
       const orders = await cursor.toArray();
       res.send(orders);
     });
+    // get orders by email
+    app.get("/orders/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = {
+        email: email,
+      };
+      const cursor = ordersCollection.find(query);
+      const orders = await cursor.toArray();
+      res.send(orders);
+    });
+
     //orders api
-    app.post("/orders", async (req, res) => {
+    app.post("/orders", verifyJWT, async (req, res) => {
       const order = req.body;
       const result = ordersCollection.insertOne(order);
       res.send(result);
     });
 
     //delet order id
-    app.delete("/orders/:id", async (req, res) => {
+    app.delete("/orders/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await ordersCollection.deleteOne(query);
       res.send(result);
+    });
+    // get wishlist
+    app.get("/wishlist", async (req, res) => {
+      let query = {};
+
+      if (req?.query?.email) {
+        query = {
+          email: req?.query?.email,
+        };
+      }
+      const cursor = wishlistCollection.find(query);
+      const wishlist = await cursor.toArray();
+      res.send(wishlist);
+    });
+    // get wishlist by email
+    app.get("/wishlist/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = {
+        email: email,
+      };
+      const cursor = wishlistCollection.find(query);
+      const wishlist = await cursor.toArray();
+      res.send(wishlist);
+    });
+    //wishlist api
+    app.post("/wishlist", verifyJWT, async (req, res) => {
+      const wishlist = req.body;
+      const result = wishlistCollection.insertOne(wishlist);
+      res.send(result);
+    });
+    // delet wishlist id
+    app.delete("/wishlist/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await wishlistCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // get data in shop name wise
+    app.get("/shop/:shop", async (req, res) => {
+      const shop = req.params.shop;
+      const query = {
+        shop: shop,
+      };
+      const cursor = productsCollection.find(query);
+      const products = await cursor.toArray();
+      res.send(products);
     });
   } catch (error) {
     console.log(error);
