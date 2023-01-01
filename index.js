@@ -44,6 +44,7 @@ async function run() {
     const usersCollection = client.db("khudalagcy").collection("users");
     const ordersCollection = client.db("khudalagcy").collection("orders");
     const wishlistCollection = client.db("khudalagcy").collection("wishlist");
+    const shopsCollection = client.db("khudalagcy").collection("shops");
 
     // Verify Admin
     const verifyAdmin = async (req, res, next) => {
@@ -285,6 +286,33 @@ async function run() {
       const cursor = productsCollection.find(query);
       const products = await cursor.toArray();
       res.send(products);
+    });
+
+    // create a shop
+    app.post("/shops", verifyJWT, async (req, res) => {
+      const shop = req.body;
+      const result = await shopsCollection.insertOne(shop);
+      res.send(result);
+    });
+    // get all shops
+    app.get("/shops", async (req, res) => {
+      const cursor = shopsCollection.find();
+      const shops = await cursor.toArray();
+      res.send(shops);
+    });
+    // get shop by email
+    app.get("/shops/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = {
+        email: email,
+      };
+      const cursor = shopsCollection.find(query);
+      const shops = await cursor.toArray();
+      res.send(shops);
     });
   } catch (error) {
     console.log(error);
