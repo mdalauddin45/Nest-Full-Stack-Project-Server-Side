@@ -488,6 +488,14 @@ async function run() {
         res.redirect(`${process.env.CLIENT_URL}/payment/fail`);
       }
     });
+
+    // get confrim payment data
+    app.get("/confirmorder/by-transaction-id/:id", async (req, res) => {
+      const { id } = req.params;
+      const order = await confirmorderCollection.findOne({ transactionId: id });
+      console.log(id, order);
+      res.send(order);
+    });
   } catch (error) {
     console.log(error);
   }
