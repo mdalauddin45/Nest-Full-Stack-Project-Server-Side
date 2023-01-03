@@ -458,6 +458,7 @@ async function run() {
     // payment success
     app.post("/payment/success", async (req, res) => {
       const { transactionId } = req.query;
+      console.log(transactionId);
 
       if (!transactionId) {
         return res.redirect(`${process.env.CLIENT_URL}/payment/fail`);
@@ -465,10 +466,11 @@ async function run() {
 
       const result = await confirmorderCollection.updateOne(
         { transactionId },
+
         { $set: { paid: true, paidAt: new Date() } }
       );
-
-      if (result.modifiedCount > 0) {
+      console.log(result);
+      if (result.modifiedCount) {
         res.redirect(
           `${process.env.CLIENT_URL}/payment/success?transactionId=${transactionId}`
         );
