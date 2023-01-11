@@ -170,17 +170,16 @@ async function run() {
     });
 
     // Update A product
-    app.put("/products", verifyJWT, async (req, res) => {
+    app.patch("/product/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
       const product = req.body;
-      // console.log(product);
-
-      const filter = {};
+      const query = { _id: ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
         $set: product,
       };
       const result = await productsCollection.updateOne(
-        filter,
+        query,
         updateDoc,
         options
       );
@@ -304,6 +303,7 @@ async function run() {
       res.send(result);
     });
 
+    //update shop
     app.patch("/shops/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = req.decoded.email;
@@ -390,6 +390,13 @@ async function run() {
         updateDoc,
         options
       );
+      res.send(result);
+    });
+    // Delete a checkout
+    app.delete("/checkout/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await checkoutCollection.deleteOne(query);
       res.send(result);
     });
 
